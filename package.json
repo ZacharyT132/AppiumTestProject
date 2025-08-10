@@ -16,6 +16,7 @@
     "directories": {
       "output": "dist"
     },
+    "icon": "icon.png",
     "win": {
       "target": "portable"
     },
@@ -29,13 +30,9 @@
       "artifactName": "${productName}-${version}.exe"
     },
     "compression": "store",
-    "asar": false,
-    "extraResources": [
-      {
-        "from": "node_modules",
-        "to": "node_modules",
-        "filter": ["**/*"]
-      }
+    "asar": true,
+    "asarUnpack": [
+      "node_modules/**/*"
     ]
   },
   "devDependencies": {
