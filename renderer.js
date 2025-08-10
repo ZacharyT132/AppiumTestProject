@@ -1,294 +1,145 @@
-const startBtn = document.getElementById('startBtn');
-const stopBtn = document.getElementById('stopBtn');
-const sessionBtn = document.getElementById('sessionBtn');
-const statusDiv = document.getElementById('status');
-const portInput = document.getElementById('port');
-const platformSelect = document.getElementById('platform');
-const capabilitiesTextarea = document.getElementById('capabilities');
-const devicesSelect = document.getElementById('devices');
-const refreshBtn = document.getElementById('refreshBtn');
+// UI state management
+const state = {
+  serverRunning: false,
+  devices: []
+};
 
-let detectedDevices = { android: [], ios: [] };
+// DOM elements
+const els = {
+  port: document.getElementById('port'),
+  startBtn: document.getElementById('startBtn'),
+  stopBtn: document.getElementById('stopBtn'),
+  devices: document.getElementById('devices'),
+  refreshBtn: document.getElementById('refreshBtn'),
+  platform: document.getElementById('platform'),
+  capabilities: document.getElementById('capabilities'),
+  sessionBtn: document.getElementById('sessionBtn'),
+  status: document.getElementById('status')
+};
 
-function log(message, isError = false) {
-  const timestamp = new Date().toLocaleTimeString();
-  const className = isError ? 'error' : 'success';
-  statusDiv.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
-  statusDiv.scrollTop = statusDiv.scrollHeight;
+// Update UI based on server state
+function updateUI() {
+  els.startBtn.disabled = state.serverRunning;
+  els.stopBtn.disabled = !state.serverRunning;
+  els.sessionBtn.disabled = !state.serverRunning;
 }
 
-startBtn.addEventListener('click', async () => {
-  const port = parseInt(portInput.value);
-  startBtn.disabled = true;
+// Log message to status
+function log(msg, type = 'info') {
+  const time = new Date().toLocaleTimeString();
+  const className = type === 'error' ? 'error' : type === 'success' ? 'success' : '';
+  els.status.innerHTML += `<div class="${className}">[${time}] ${msg}</div>`;
+  els.status.scrollTop = els.status.scrollHeight;
+}
+
+// Start server
+els.startBtn.addEventListener('click', async () => {
+  const port = parseInt(els.port.value);
+  log(`Starting server on port ${port}...`);
   
-  log('Starting Appium server...');
   const result = await window.appiumAPI.startServer(port);
-  
   if (result.success) {
-    log(result.message);
-    stopBtn.disabled = false;
-    sessionBtn.disabled = false;
+    state.serverRunning = true;
+    log(result.message, 'success');
   } else {
-    log(result.message, true);
-    startBtn.disabled = false;
+    log(result.message, 'error');
   }
+  updateUI();
 });
 
-async function refreshDevices() {
-  log('Detecting devices...');
-  detectedDevices = await window.appiumAPI.getDevices();
+// Stop server
+els.stopBtn.addEventListener('click', async () => {
+  log('Stopping server...');
   
-  devicesSelect.innerHTML = '<option value="">Select a device</option>';
-  const allDevices = [...detectedDevices.android, ...detectedDevices.ios];
-  
-  if (allDevices.length === 0) {
-    devicesSelect.innerHTML = '<option value="">No devices detected</option>';
-    log('No devices found', true);
-  } else {
-    allDevices.forEach(device => {
-      const option = document.createElement('option');
-      option.value = device.id;
-      option.textContent = `${device.name} (${device.type})`;
-      option.dataset.type = device.type;
-      devicesSelect.appendChild(option);
-    });
-    log(`Found ${allDevices.length} device(s)`);
-  }
-}
-
-refreshBtn.addEventListener('click', refreshDevices);
-
-devicesSelect.addEventListener('change', () => {
-  const selectedOption = devicesSelect.options[devicesSelect.selectedIndex];
-  if (!selectedOption.value) return;
-  
-  const deviceType = selectedOption.dataset.type;
-  const deviceId = selectedOption.value;
-  const deviceName = selectedOption.textContent.split(' (')[0];
-  
-  platformSelect.value = deviceType;
-  
-  const capabilities = deviceType === 'android' ? {
-    platformName: "Android",
-    "appium:deviceName": deviceId,
-    "appium:automationName": "UiAutomator2"
-  } : {
-    platformName: "iOS",
-    "appium:deviceName": deviceName,
-    "appium:udid": deviceId,
-    "appium:automationName": "XCUITest"
-  };
-  
-  capabilitiesTextarea.value = JSON.stringify(capabilities, null, 2);
-});
-
-// Auto-detect devices on startup
-refreshDevices();
-
-stopBtn.addEventListener('click', async () => {
-  stopBtn.disabled = true;
-  
-  log('Stopping Appium server...');
   const result = await window.appiumAPI.stopServer();
-  
   if (result.success) {
-    log(result.message);
-    startBtn.disabled = false;
-    sessionBtn.disabled = true;
+    state.serverRunning = false;
+    log(result.message, 'success');
   } else {
-    log(result.message, true);
+    log(result.message, 'error');
   }
-  stopBtn.disabled = false;
+  updateUI();
 });
 
-async function refreshDevices() {
-  log('Detecting devices...');
-  detectedDevices = await window.appiumAPI.getDevices();
-  
-  devicesSelect.innerHTML = '<option value="">Select a device</option>';
-  const allDevices = [...detectedDevices.android, ...detectedDevices.ios];
-  
-  if (allDevices.length === 0) {
-    devicesSelect.innerHTML = '<option value="">No devices detected</option>';
-    log('No devices found', true);
-  } else {
-    allDevices.forEach(device => {
-      const option = document.createElement('option');
-      option.value = device.id;
-      option.textContent = `${device.name} (${device.type})`;
-      option.dataset.type = device.type;
-      devicesSelect.appendChild(option);
-    });
-    log(`Found ${allDevices.length} device(s)`);
-  }
-}
-
-refreshBtn.addEventListener('click', refreshDevices);
-
-devicesSelect.addEventListener('change', () => {
-  const selectedOption = devicesSelect.options[devicesSelect.selectedIndex];
-  if (!selectedOption.value) return;
-  
-  const deviceType = selectedOption.dataset.type;
-  const deviceId = selectedOption.value;
-  const deviceName = selectedOption.textContent.split(' (')[0];
-  
-  platformSelect.value = deviceType;
-  
-  const capabilities = deviceType === 'android' ? {
-    platformName: "Android",
-    "appium:deviceName": deviceId,
-    "appium:automationName": "UiAutomator2"
-  } : {
-    platformName: "iOS",
-    "appium:deviceName": deviceName,
-    "appium:udid": deviceId,
-    "appium:automationName": "XCUITest"
-  };
-  
-  capabilitiesTextarea.value = JSON.stringify(capabilities, null, 2);
-});
-
-// Auto-detect devices on startup
-refreshDevices();
-
-sessionBtn.addEventListener('click', async () => {
+// Create session
+els.sessionBtn.addEventListener('click', async () => {
   try {
-    const capabilities = JSON.parse(capabilitiesTextarea.value);
-    sessionBtn.disabled = true;
-    
+    const caps = JSON.parse(els.capabilities.value);
     log('Creating session...');
-    const result = await window.appiumAPI.createSession(capabilities);
     
+    const result = await window.appiumAPI.createSession(caps);
     if (result.success) {
-      log(`Session created: ${result.sessionId}`);
+      log(`Session created: ${result.sessionId}`, 'success');
     } else {
-      log(result.message, true);
+      log(result.message, 'error');
     }
-  } catch (error) {
-    log(`Invalid JSON: ${error.message}`, true);
-  } finally {
-    sessionBtn.disabled = false;
+  } catch (e) {
+    log(`Invalid JSON: ${e.message}`, 'error');
   }
 });
 
+// Refresh devices
 async function refreshDevices() {
-  log('Detecting devices...');
-  detectedDevices = await window.appiumAPI.getDevices();
+  log('Scanning for devices...');
+  const devices = await window.appiumAPI.getDevices();
+  state.devices = [...devices.android, ...devices.ios];
   
-  devicesSelect.innerHTML = '<option value="">Select a device</option>';
-  const allDevices = [...detectedDevices.android, ...detectedDevices.ios];
-  
-  if (allDevices.length === 0) {
-    devicesSelect.innerHTML = '<option value="">No devices detected</option>';
-    log('No devices found', true);
+  els.devices.innerHTML = '';
+  if (state.devices.length === 0) {
+    els.devices.innerHTML = '<option value="">No devices detected</option>';
   } else {
-    allDevices.forEach(device => {
-      const option = document.createElement('option');
-      option.value = device.id;
-      option.textContent = `${device.name} (${device.type})`;
-      option.dataset.type = device.type;
-      devicesSelect.appendChild(option);
+    state.devices.forEach(device => {
+      const opt = document.createElement('option');
+      opt.value = device.id;
+      opt.textContent = `${device.name} (${device.type})`;
+      els.devices.appendChild(opt);
     });
-    log(`Found ${allDevices.length} device(s)`);
   }
+  
+  log(`Found ${state.devices.length} device(s)`, 'success');
 }
 
-refreshBtn.addEventListener('click', refreshDevices);
-
-devicesSelect.addEventListener('change', () => {
-  const selectedOption = devicesSelect.options[devicesSelect.selectedIndex];
-  if (!selectedOption.value) return;
+// Device selection updates capabilities
+els.devices.addEventListener('change', () => {
+  const deviceId = els.devices.value;
+  const device = state.devices.find(d => d.id === deviceId);
+  if (!device) return;
   
-  const deviceType = selectedOption.dataset.type;
-  const deviceId = selectedOption.value;
-  const deviceName = selectedOption.textContent.split(' (')[0];
-  
-  platformSelect.value = deviceType;
-  
-  const capabilities = deviceType === 'android' ? {
-    platformName: "Android",
-    "appium:deviceName": deviceId,
-    "appium:automationName": "UiAutomator2"
-  } : {
-    platformName: "iOS",
-    "appium:deviceName": deviceName,
-    "appium:udid": deviceId,
-    "appium:automationName": "XCUITest"
-  };
-  
-  capabilitiesTextarea.value = JSON.stringify(capabilities, null, 2);
-});
-
-// Auto-detect devices on startup
-refreshDevices();
-
-platformSelect.addEventListener('change', () => {
-  const platform = platformSelect.value;
-  const defaultCaps = platform === 'android' ? {
-    platformName: "Android",
-    "appium:platformVersion": "13",
-    "appium:deviceName": "emulator-5554",
-    "appium:automationName": "UiAutomator2",
-    "appium:app": "/path/to/app.apk"
-  } : {
-    platformName: "iOS",
-    "appium:platformVersion": "17.0",
-    "appium:deviceName": "iPhone 15",
-    "appium:automationName": "XCUITest",
-    "appium:app": "/path/to/app.ipa"
-  };
-  
-  capabilitiesTextarea.value = JSON.stringify(defaultCaps, null, 2);
-});
-
-async function refreshDevices() {
-  log('Detecting devices...');
-  detectedDevices = await window.appiumAPI.getDevices();
-  
-  devicesSelect.innerHTML = '<option value="">Select a device</option>';
-  const allDevices = [...detectedDevices.android, ...detectedDevices.ios];
-  
-  if (allDevices.length === 0) {
-    devicesSelect.innerHTML = '<option value="">No devices detected</option>';
-    log('No devices found', true);
+  const caps = JSON.parse(els.capabilities.value);
+  if (device.type === 'android') {
+    caps.platformName = 'Android';
+    caps['appium:deviceName'] = device.id;
+    caps['appium:automationName'] = 'UiAutomator2';
   } else {
-    allDevices.forEach(device => {
-      const option = document.createElement('option');
-      option.value = device.id;
-      option.textContent = `${device.name} (${device.type})`;
-      option.dataset.type = device.type;
-      devicesSelect.appendChild(option);
-    });
-    log(`Found ${allDevices.length} device(s)`);
+    caps.platformName = 'iOS';
+    caps['appium:deviceName'] = device.name;
+    caps['appium:udid'] = device.id;
+    caps['appium:automationName'] = 'XCUITest';
   }
-}
-
-refreshBtn.addEventListener('click', refreshDevices);
-
-devicesSelect.addEventListener('change', () => {
-  const selectedOption = devicesSelect.options[devicesSelect.selectedIndex];
-  if (!selectedOption.value) return;
-  
-  const deviceType = selectedOption.dataset.type;
-  const deviceId = selectedOption.value;
-  const deviceName = selectedOption.textContent.split(' (')[0];
-  
-  platformSelect.value = deviceType;
-  
-  const capabilities = deviceType === 'android' ? {
-    platformName: "Android",
-    "appium:deviceName": deviceId,
-    "appium:automationName": "UiAutomator2"
-  } : {
-    platformName: "iOS",
-    "appium:deviceName": deviceName,
-    "appium:udid": deviceId,
-    "appium:automationName": "XCUITest"
-  };
-  
-  capabilitiesTextarea.value = JSON.stringify(capabilities, null, 2);
+  els.capabilities.value = JSON.stringify(caps, null, 2);
 });
 
-// Auto-detect devices on startup
+// Platform change updates template
+els.platform.addEventListener('change', () => {
+  const template = els.platform.value === 'android' ? {
+    platformName: 'Android',
+    'appium:platformVersion': '13',
+    'appium:deviceName': 'emulator-5554',
+    'appium:automationName': 'UiAutomator2',
+    'appium:app': '/path/to/app.apk'
+  } : {
+    platformName: 'iOS',
+    'appium:platformVersion': '16.0',
+    'appium:deviceName': 'iPhone 14',
+    'appium:automationName': 'XCUITest',
+    'appium:app': '/path/to/app.ipa'
+  };
+  els.capabilities.value = JSON.stringify(template, null, 2);
+});
+
+// Refresh button
+els.refreshBtn.addEventListener('click', refreshDevices);
+
+// Initial setup
+updateUI();
 refreshDevices();
