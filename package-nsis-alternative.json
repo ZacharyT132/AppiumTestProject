@@ -17,7 +17,7 @@
       "output": "dist"
     },
     "win": {
-      "target": "portable"
+      "target": "nsis"
     },
     "mac": {
       "target": "dmg"
@@ -25,10 +25,12 @@
     "linux": {
       "target": "AppImage"
     },
-    "portable": {
-      "artifactName": "${productName}-${version}.exe"
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "packElevateHelper": false
     },
-    "compression": "store",
+    "compression": "normal",
     "asar": false,
     "extraResources": [
       {
