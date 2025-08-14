@@ -1,48 +1,15 @@
 {
-  "name": "appium-electron-app",
+  "name": "multi-device-appium",
   "version": "1.0.0",
-  "description": "Simple Electron app with Appium server",
-  "main": "main.js",
+  "main": "main/main.js",
   "scripts": {
     "start": "electron .",
-    "dist": "electron-builder",
-    "dist-win": "electron-builder --win",
-    "dist-mac": "electron-builder --mac",
-    "dist-linux": "electron-builder --linux"
-  },
-  "build": {
-    "appId": "com.example.appium-electron",
-    "productName": "Appium Controller",
-    "directories": {
-      "output": "dist"
-    },
-    "icon": "icon.png",
-    "win": {
-      "target": "portable"
-    },
-    "mac": {
-      "target": "dmg"
-    },
-    "linux": {
-      "target": "AppImage"
-    },
-    "portable": {
-      "artifactName": "${productName}-${version}.exe"
-    },
-    "compression": "store",
-    "asar": true,
-    "asarUnpack": [
-      "node_modules/**/*"
-    ]
-  },
-  "devDependencies": {
-    "electron": "^28.0.0",
-    "electron-builder": "^24.9.1"
+    "postinstall": "npx appium driver install uiautomator2"
   },
   "dependencies": {
-    "appium": "^2.4.0",
-    "appium-uiautomator2-driver": "^2.42.0",
-    "appium-xcuitest-driver": "^5.11.0",
-    "webdriverio": "^8.24.0"
+    "axios": "^1.6.0",
+    "appium": "^2.5.0",
+    "appium-uiautomator2-driver": "^3.0.0",
+    "electron": "^27.0.0"
   }
 }
