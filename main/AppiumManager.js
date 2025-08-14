@@ -2,6 +2,7 @@ const { spawn, exec } = require('child_process');
 const axios = require('axios');
 const { promisify } = require('util');
 const path = require('path');
+const fs = require('fs');
 const execAsync = promisify(exec);
 
 class AppiumManager {
@@ -10,7 +11,27 @@ class AppiumManager {
     this.sessions = new Map();    // deviceId -> {sessionId}
     this.locks = new Map();        // deviceId -> boolean
     this.nextPort = 4723;
-    this.appiumPath = path.join(__dirname, '..', 'node_modules', '.bin', 'appium');
+    this.appiumPath = this.findAppium();
+  }
+
+  findAppium() {
+    // Try local installation first
+    const localPaths = [
+      path.join(__dirname, '..', 'node_modules', '.bin', 'appium'),
+      path.join(__dirname, '..', 'node_modules', '.bin', 'appium.cmd'),
+      path.join(__dirname, '..', 'node_modules', 'appium', 'bin', 'appium.js')
+    ];
+    
+    for (const p of localPaths) {
+      if (fs.existsSync(p)) {
+        console.log('Found appium at:', p);
+        return p;
+      }
+    }
+    
+    // Fall back to global appium
+    console.log('Using global appium');
+    return 'appium';
   }
 
   async getDevices() {
